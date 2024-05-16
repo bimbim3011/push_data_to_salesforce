@@ -7,16 +7,16 @@ import time
 app = FastAPI()
 
 # Thông tin kết nối Oracle
-oracle_username = ''
-oracle_password = ''
-oracle_host = ''
-oracle_port = ''
-oracle_service = ''
+oracle_username = 'cargo_dev'
+oracle_password = 'cargo_dev2023'
+oracle_host = '116.103.228.228'
+oracle_port = '1521'
+oracle_service = 'dwhcargo'
 
 # Thông tin kết nối Salesforce
-salesforce_username = ''
-salesforce_password = ''
-salesforce_security_token = ''
+salesforce_username = 'nvtuan@vna.capa'
+salesforce_password = 'Tuan@161099'
+salesforce_security_token = 'SbryDAX5vIBobMtpqFmkP7px'
 salesforce_domain = 'test'  # hoặc 'login' nếu bạn đang sử dụng Salesforce Production
 
 # Kết nối đến Oracle
@@ -74,32 +74,37 @@ async def push_to_salesforce():
 
     minutes = int(execution_time // 60)
     seconds = int(execution_time % 60)
-    print("Thoi gian Keo Data:", minutes, "phut", seconds, "giay")
+    logging.info(f"Thời gian kéo Data: {minutes} phút {seconds} giây")
     # Kết nối đến Salesforce
     try:
         sf = connect_to_salesforce()
     except HTTPException as e:
         return {"error": str(e.detail)}
-
+    salesforce_record_id = '0031m00000O5c7WAAR'
     # Lấy tên các trường trên Salesforce Object bạn muốn đẩy dữ liệu vào
     # fields_to_push = ['Email']
     # Đẩy dữ liệu lên Salesforce
     for row in data_from_oracle:
         try:
             record = {'Email': row[0], 'LastName': row[1]}
-            sf_object = sf.Contact.create(record)
-            logging.info(f"Đã chèn bản ghi với ID: {sf_object['id']}")
+            # sf_object = sf.Contact.create(record)
+            sf.Contact.update(salesforce_record_id, record)
+            # logging.info(f"Đã chèn bản ghi với ID: {sf_object['id']}")
+            logging.info(f"Đã chèn bản ghi với ID: {salesforce_record_id}")
         except Exception as e:
             logging.error(f"Lỗi chèn bản ghi vào Salesforce: {e}")
             return {"error": f"Lỗi chèn bản ghi vào Salesforce: {e}"}
+    overall_end_time = time.time()
+    overall_execution_time = overall_end_time - start_time
 
-    return {"message": "Đã đẩy dữ liệu lên Salesforce thành công"}
-end_time = time.time()
-execution_time = end_time - start_time
+    overall_minutes = int(overall_execution_time // 60)
+    overall_seconds = int(overall_execution_time % 60)
+    # print("Thoi gian Chay:", minutes, "phut", seconds, "giay")
+    logging.info(f"Thời gian chạy: {overall_minutes} phút {overall_seconds} giây")
+    return {"message": "Đã đẩy dữ liệu lên Salesforce thành công",
+            "Thời gian kéo Data": f"{minutes} phút {seconds} giây",
+            "Thời gian chạy": f"{overall_minutes} phút {overall_seconds} giây"}
 
-minutes = int(execution_time // 60)
-seconds = int(execution_time % 60)
-print("Thoi gian Chay:", minutes, "phut", seconds, "giay")
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app)
