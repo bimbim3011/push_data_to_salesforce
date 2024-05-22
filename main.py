@@ -46,7 +46,7 @@ def connect_to_salesforce():
     except SalesforceGeneralError as e:
         logging.error(f"Lỗi chung Salesforce: {e}")
         raise HTTPException(status_code=500, detail="Lỗi kết nối đến Salesforce")
-start_time = time.time()
+    
 @app.get("/push_to_salesforce")
 async def push_to_salesforce():
     # Kết nối đến Oracle
@@ -59,7 +59,7 @@ async def push_to_salesforce():
     start_time = time.time()
     # Lấy dữ liệu từ Oracle
     try:
-        oracle_cursor.execute("SELECT Email_1, Last_Name FROM g_contact WHERE ROWNUM <= 5")
+        oracle_cursor.execute("SELECT id, Email_1, Full_Name, ID_SF FROM FFP WHERE Email_1 IS NOT NULL AND Full_Name IS NOT NULL")
         data_from_oracle = oracle_cursor.fetchall()
     except cx_Oracle.DatabaseError as e:
         logging.error(f"Lỗi lấy dữ liệu từ Oracle: {e}")
@@ -80,17 +80,29 @@ async def push_to_salesforce():
         sf = connect_to_salesforce()
     except HTTPException as e:
         return {"error": str(e.detail)}
-    salesforce_record_id = '0031m00000O5c7WAAR'
+
+    inserted_ids = []
+    updated_ids = []
+    
     # Lấy tên các trường trên Salesforce Object bạn muốn đẩy dữ liệu vào
     # fields_to_push = ['Email']
     # Đẩy dữ liệu lên Salesforce
     for row in data_from_oracle:
+        email = row[1]
+        full_name = row[2]
+        id_sf = row[3]
+
+        record = {'Email': email, 'Lastname': full_name}
+
         try:
-            record = {'Email': row[0], 'LastName': row[1]}
-            # sf_object = sf.Contact.create(record)
-            sf.Contact.update(salesforce_record_id, record)
-            # logging.info(f"Đã chèn bản ghi với ID: {sf_object['id']}")
-            logging.info(f"Đã chèn bản ghi với ID: {salesforce_record_id}")
+            if id_sf is None:
+                sf_object = sf.Contact.create(record)
+                inserted_ids.append(sf_object['id'])
+                logging.info(f"Đã chèn bản ghi với ID: {sf_object['id']}")
+            else:
+                sf.Contact.update(id_sf, record)
+                updated_ids.append(id_sf)
+                logging.info(f"Đã cập nhật bản ghi với ID: {id_sf}")
         except Exception as e:
             logging.error(f"Lỗi chèn bản ghi vào Salesforce: {e}")
             return {"error": f"Lỗi chèn bản ghi vào Salesforce: {e}"}
@@ -101,7 +113,10 @@ async def push_to_salesforce():
     overall_seconds = int(overall_execution_time % 60)
     # print("Thoi gian Chay:", minutes, "phut", seconds, "giay")
     logging.info(f"Thời gian chạy: {overall_minutes} phút {overall_seconds} giây")
+    print(f"Inserted_id: {inserted_ids}, Uodated_ids: {updated_ids}")
     return {"message": "Đã đẩy dữ liệu lên Salesforce thành công",
+            "updated_ids": updated_ids,
+            "inserted_ids": inserted_ids,
             "Thời gian kéo Data": f"{minutes} phút {seconds} giây",
             "Thời gian chạy": f"{overall_minutes} phút {overall_seconds} giây"}
 
