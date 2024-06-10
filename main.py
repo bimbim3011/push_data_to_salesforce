@@ -7,16 +7,16 @@ import time
 app = FastAPI()
 
 # Thông tin kết nối Oracle
-oracle_username = 'cargo_dev'
-oracle_password = 'cargo_dev2023'
-oracle_host = '116.103.228.228'
-oracle_port = '1521'
-oracle_service = 'dwhcargo'
+oracle_username = ''
+oracle_password = ''
+oracle_host = ''
+oracle_port = ''
+oracle_service = ''
 
 # Thông tin kết nối Salesforce
-salesforce_username = 'nvtuan@vna.capa'
-salesforce_password = 'Tuan@161099'
-salesforce_security_token = 'SbryDAX5vIBobMtpqFmkP7px'
+salesforce_username = 'a'
+salesforce_password = ''
+salesforce_security_token = ''
 salesforce_domain = 'test'  # hoặc 'login' nếu bạn đang sử dụng Salesforce Production
 
 # Kết nối đến Oracle
